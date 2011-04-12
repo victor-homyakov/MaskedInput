@@ -1,50 +1,72 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <title>Testing MaskedInput</title>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Masked Input functional test</title>
+    <style type="text/css">
+      label {
+        display: block;
+        /*float: right;*/
+      }
+
+      label span {
+        display: inline-block;
+        /*text-align: right;*/
+        width: 10em;
+      }
+
+      label input {
+        margin-right: 0.5em;
+      }
+    </style>
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/prototype/1.6.1.0/prototype.js"></script>
     <!-- <script type="text/javascript" src="event.simulate.js"></script> -->
     <script type="text/javascript" src="prototype.maskedinput.js"></script>
-</head>
-<body>
     <script type="text/javascript">
+      Element.mask.definitions['H'] = '[012]';
+      Element.mask.definitions['M'] = '[012345]';
 
-    Event.observe(window, 'load', function() {     
-
-        new MaskedInput('#date', '99/99/9999');
-        new MaskedInput('#phone', '(999) 999-9999');
-	new MaskedInput('#phoneext', '(999) 999-9999? x99999');
-	new MaskedInput('#tin', '99-9999999');
-	new MaskedInput('#ssn', '999-99-9999');
-	new MaskedInput('#product', 'a*-999-a999');
-
-	new MaskedInput('#eyescript', '~9.99 ~9.99 999', {
-		completed: function(){
-			alert("You typed the following: " + this.getValue());
-		}
-	});
-		
-	MaskedInput.definitions['~']='[+-]';
-
-	new MaskedInput('#eyescript2', '~9.99 ~9.99 999', {
-		completed: function(){
-			alert("You typed the following: " + this.getValue());
-		}
-	});
-    });
+      Event.observe(document, 'dom:loaded', function() {
+        //alert("dom:loaded");
+        $$(".time").invoke("mask", "H9:M9");
+        $("date1").mask("99.99.9999");
+        $("phone").mask("(99) 999-99-99? ***");
+        $("code").mask("********", {
+          completed: function() {
+            alert("Code " + this.getValue() + " is incorrect :)");
+          }
+        });
+      });
     </script>
-    
-<table border="0"><tbody>
-	<tr><td>Date</td><td><input id="date" tabindex="1" type="text"></td><td>99/99/9999</td></tr>
-	<tr><td>Phone</td><td><input id="phone" tabindex="3" type="text"></td><td>(999) 999-9999</td></tr>
-	<tr><td>Phone + Ext</td><td><input id="phoneext" tabindex="4" type="text"></td><td>(999) 999-9999? x99999</td></tr>
-	<tr><td>Tax ID</td><td><input id="tin" tabindex="5" type="text"></td><td>99-9999999</td></tr>
-	<tr><td>SSN</td><td><input id="ssn" tabindex="6" type="text"></td><td>999-99-9999</td></tr>
-	<tr><td>Product Key</td><td><input id="product" tabindex="7" type="text"></td><td>a*-999-a999</td></tr>
-	<tr><td>Eye Script</td><td><input id="eyescript" tabindex="8" type="text"></td><td>~9.99 ~9.99 999</td></tr>
-	<tr><td>Custom</td><td><input id="eyescript2" tabindex="8" type="text"></td><td>[+-]9.99 [+-]9.99 999</td></tr>
-</tbody></table>
-</body>
+  </head>
+  <body>
+    <form action="">
+      <fieldset>
+        <legend>Time</legend>
+        <label>
+          <span>date</span>
+          <input type="text" name="date" class="date" id="date1" /><span>99.99.9999</span>
+        </label>
+        <label>
+          <span>start time</span>
+          <input type="text" name="startTime" class="time" /><span>H9:M9</span>
+        </label>
+        <label>
+          <span>end time</span>
+          <input type="text" name="endTime" class="time" /><span>H9:M9</span>
+        </label>
+      </fieldset>
+      <fieldset>
+        <legend>Personal info</legend>
+        <label>
+          <span>phone</span>
+          <input type="text" name="phone" id="phone" /><span>(99) 999-99-99? ***</span>
+        </label>
+        <label>
+          <span>code</span>
+          <input type="text" name="code" id="code" /><span>********</span>
+        </label>
+      </fieldset>
+    </form>
+  </body>
 </html>
