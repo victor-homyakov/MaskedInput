@@ -1,7 +1,7 @@
-Prototype MaskedInput
+MaskedInput Prototype
 =============
 
-A quick port of the jQuery Masked Input Plugin to Prototype.
+A port of the jQuery Masked Input Plugin 1.3 to Prototype.
 The plugin breaks the native change event in the browser. It won't fire unless event.simulate.js is available.
 
 Requires: Prototype >= 1.6.1
@@ -12,18 +12,16 @@ Tested on:
 
 ### Example code
 
-    $$('input').mask('99.99.9999');
-
     <input id="test" type="text" size="10" />
     <input id="test2" type="text" size="10" />
 
+    $$('input').invoke('mask', '99.99.9999');
 Or
-
-    $('test').mask('99.99.9999');
+    $('test', 'test2').each(function (e) {e.mask('99.99.9999');});
 
 Placeholder character can be changed and an event can be called when the mask is completed
 
-    function finished() { alert(this); }
+    function finished() {alert(this);}
     $('test').mask('99.99.9999', {placeholder: '+', completed: finished});
 
 If you need to unmask an element, use the unmask method
@@ -32,13 +30,17 @@ If you need to unmask an element, use the unmask method
     ...
     element.unmask().mask('99.99.99');
 
-The mask definitions can be changed (only uppercase allowed)
+The mask definitions can be changed
 
     Element.mask.definitions['a'] = '[A-Z]';
 
-Or new ones can be added (only 0 and 1 allowed)
+Or new ones can be added
 
-    Element.mask.definitions['b'] = '[0-1]'
-    Element.mask('test', 'aaa.bb.9999');
+    <input id="time1" type="text" class="time" size="5" />
+    <input id="time2" type="text" class="time" size="5" />
+
+    Element.mask.definitions['H'] = '[012]';
+    Element.mask.definitions['M'] = '[012345]';
+    $$(".time").invoke("mask", "H9:M9");
 
 Find the original jQuery code including supported masks at http://digitalbush.com/projects/masked-input-plugin/
