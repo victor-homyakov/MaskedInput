@@ -19,7 +19,7 @@
     throw "Masked Input requires Prototype 1.6.1 or above to be loaded.";
   }
 
-  var pasteEventName = (Prototype.Browser.IE ? 'paste' : 'input'), iPhone = !!window.orientation;
+  var pasteEventName = (Prototype.Browser.IE ? 'paste' : 'input'), iPhone = !!window.orientation, storageKey = "mask_data";
 
   /**
    * Helper Function for Caret positioning.
@@ -72,7 +72,7 @@
 
   function getMask(element) {
     element = $(element);
-    var mi = element.retrieve("masked_input");
+    var mi = element.retrieve(storageKey);
     if (mi) {
       return $A(mi.buffer).map(function(c, i) {
         //return tests[i] ? c : null;
@@ -151,7 +151,7 @@
       });
       // TODO .split('').map() -> replace(..., fn(){}).split('') ?
 
-      input.store("masked_input", {
+      input.store(storageKey, {
         buffer: buffer,
         tests: tests,
         settings: settings
@@ -335,17 +335,17 @@
         writeBuffer();
 
         var moveCaret = function() {
-          if (pos == mask.length) {
-            caret(input, 0, pos);
-          } else {
-            caret(input, pos);
-          }
+          caret(input, pos == mask.length ? 0 : pos, pos);
         };
         if (Prototype.Browser.IE) {
           moveCaret();
         } else {
           setTimeout(moveCaret, 0);
         }
+      }
+
+      function maskShowEvent() {
+        focusEvent();
       }
 
       function pasteEvent() {
@@ -356,8 +356,8 @@
 
       if (!input.readAttribute("readonly")) {
         input.observe("mask:unmask", function() {
-          input.store("masked_input", undefined).stopObserving("mask:unmask").stopObserving("focus", focusEvent).stopObserving("blur", blurEvent).stopObserving("keydown", keydownEvent).stopObserving("keypress", keypressEvent).stopObserving(pasteEventName, pasteEvent);
-        }).observe("focus", focusEvent).observe("blur", blurEvent).observe("keydown", keydownEvent).observe("keypress", keypressEvent).observe(pasteEventName, pasteEvent);
+          input.store(storageKey, undefined).stopObserving("mask:unmask").stopObserving("mask:show").stopObserving("focus", focusEvent).stopObserving("blur", blurEvent).stopObserving("keydown", keydownEvent).stopObserving("keypress", keypressEvent).stopObserving(pasteEventName, pasteEvent);
+        }).observe("mask:show", maskShowEvent).observe("focus", focusEvent).observe("blur", blurEvent).observe("keydown", keydownEvent).observe("keypress", keypressEvent).observe(pasteEventName, pasteEvent);
       }
 
       checkVal(); // Perform initial check for existing values
@@ -379,4 +379,7 @@
     'a': "[A-Za-z]",
     '*': "[A-Za-z0-9\u0410-\u044F]"
   };
+  setMask.storageKey = storageKey;
 })();
+
+// element.fire("mask:show"); element.fire("mask:unmask");
