@@ -51,7 +51,7 @@ Or new ones can be added
     // 1st digit of hours in 24-hours format
     Element.mask.definitions['H'] = '[012]';
     // 1st digit of minutes
-    Element.mask.definitions['M'] = '[012345]';
+    Element.mask.definitions['M'] = '[0-5]';
     // mask all time input fields
     $$(".time").invoke("mask", "H9:M9");
 
