@@ -7,8 +7,8 @@
  Requires: Prototype >= 1.6.1
  Optional: event.simulate.js from http://github.com/kangax/protolicious to trigger native change event.
  Tested on:
- Windows - IE6, IE7, IE8, IE9pre8, Firefox 3.6, Opera 9.64, Chrome 10, Safari 5;
- Linux - Opera 10, Chrome 11 beta, Firefox 3.5.5.
+ Windows - IE6-9, Firefox 3.6, Opera 9.64, Chrome 10, Safari 5;
+ Linux - Opera 10, Chrome 11-17, Firefox 3.5-10.
  Masked Input plugin for jQuery
  Copyright (c) 2007-2011 Josh Bush (digitalbush.com)
  Licensed under the MIT license (http://digitalbush.com/projects/masked-input-plugin/#license)
@@ -33,8 +33,13 @@
     if (typeof begin == 'number') {
       end = (typeof end == 'number') ? end : begin;
       if (element.setSelectionRange) {
-        element.focus();
-        element.setSelectionRange(begin, end);
+        try {
+          element.focus();
+          element.setSelectionRange(begin, end);
+        } catch (e) {
+          // ignore
+          //console.warn(e);
+        }
       } else if (element.createTextRange) {
         range = element.createTextRange();
         range.collapse(true);
@@ -74,6 +79,7 @@
     element = $(element);
     var mi = element.retrieve(storageKey);
     if (mi) {
+      // FIXME call here checkVal() to update buffer!!!
       return $A(mi.buffer).map(function(c, i) {
         //return tests[i] ? c : null;
         return mi.tests[i] && c != mi.settings.placeholder ? c : null;
@@ -112,6 +118,8 @@
   }
 
 
+  var moveCaretTimer = -1;
+
   function setMask(element, mask, settings) {
     if (!mask) {
       return getMask(element);
@@ -123,12 +131,10 @@
       completed: null
     }, settings || {});
 
-    var tests = [], defs = setMask.definitions, firstNonMaskPos = null;
-    var partialPosition = mask.length, len = mask.length;
+    var tests = [], defs = setMask.definitions, firstNonMaskPos = null, partialPosition = mask.length;
 
     mask.split("").each(function(c, i) {
       if (c == '?') {
-        len--;
         partialPosition = i;
       } else if (defs[c]) {
         tests.push(new RegExp(defs[c]));
@@ -143,7 +149,8 @@
     unmask(element);
 
     (function(element) {
-      var input = element, focusText = input.getValue(), vkKeyCode; // ignore = false; // Variable for ignoring control keys
+      var input = element, focusText = input.getValue(), vkKeyCode;
+      // var ignore = false; // Variable for ignoring control keys
       var buffer = mask.replace(/\?/g, '').split('').map(function(c, i) {
         //if (c != '?') {
         return defs[c] ? settings.placeholder : c;
@@ -158,7 +165,8 @@
       });
 
       function seekNext(pos) {
-        while (++pos <= len && !tests[pos]) {
+        var len = tests.length;
+        while (++pos < len && !tests[pos]) {
         }
         return pos;
       }
@@ -170,7 +178,7 @@
       }
 
       function clearBuffer(start, end) {
-        for (var i = start; i < end && i < len; i++) {
+        for (var i = start, len = tests.length; i < end && i < len; i++) {
           if (tests[i]) {
             buffer[i] = settings.placeholder;
           }
@@ -178,17 +186,17 @@
       }
 
       function writeBuffer() {
-        return input.setValue(buffer.join('')).getValue();
+        input.setValue(buffer.join(''));
       }
 
       function checkVal(allow) {
         // try to place characters where they belong
-        var test = input.getValue(), lastMatch = -1;
-        for (var i = 0, pos = 0; i < len; i++) {
+        var test = input.getValue(), lastMatch = -1, c;
+        for (var i = 0, pos = 0, len = tests.length; i < len; i++) {
           if (tests[i]) {
             buffer[i] = settings.placeholder;
             while (pos++ < test.length) {
-              var c = test.charAt(pos - 1);
+              c = test.charAt(pos - 1);
               if (tests[i].test(c)) {
                 buffer[i] = c;
                 lastMatch = i;
@@ -204,14 +212,13 @@
           }
         }
 
-        if (!allow && lastMatch + 1 < partialPosition) {
+        if (allow) {
+          writeBuffer();
+        } else if (lastMatch + 1 < partialPosition) {
           input.setValue('');
           clearBuffer(0, len);
-        } else if (allow || lastMatch + 1 >= partialPosition) {
-          writeBuffer();
-          if (!allow) {
-            input.setValue(input.getValue().substring(0, lastMatch + 1));
-          }
+        } else {
+          input.setValue(buffer.join('').substring(0, lastMatch + 1));
         }
 
         return (partialPosition ? i : firstNonMaskPos);
@@ -221,7 +228,7 @@
         if (begin < 0) {
           return;
         }
-        for (var i = begin, j = seekNext(end); i < len; i++) {
+        for (var i = begin, j = seekNext(end), len = tests.length; i < len; i++) {
           if (tests[i]) {
             if (j < len && tests[i].test(buffer[j])) {
               buffer[i] = buffer[j];
@@ -237,7 +244,7 @@
       }
 
       function shiftR(pos) {
-        for (var i = pos, c = settings.placeholder; i < len; i++) {
+        for (var i = pos, len = tests.length, c = settings.placeholder; i < len; i++) {
           if (tests[i]) {
             var j = seekNext(i), t = buffer[i];
             buffer[i] = c;
@@ -256,16 +263,20 @@
         vkKeyCode = k;
         //ignore = (k < 16 || (k > 16 && k < 32) || (k > 32 && k < 41));
         // backspace, delete, and escape get special treatment
-        if (k == 8 || k == 46 || (iPhone && k == 127)) { // backspace/delete
+        if (k == Event.KEY_BACKSPACE || k == 46 || (iPhone && k == 127)) { // backspace/delete
           var pos = caret(input), begin = pos.begin, end = pos.end;
           if (end - begin === 0) {
-            begin = k != 46 ? seekPrev(begin) : (end = seekNext(begin - 1));
-            end = k == 46 ? seekNext(end) : end;
+            if (k == 46) {
+              begin = seekNext(begin - 1);
+              end = seekNext(begin);
+            } else {
+              begin = seekPrev(begin);
+            }
           }
           clearBuffer(begin, end);
           shiftL(begin, end - 1);
           Event.stop(e);
-        } else if (k == 27) { // escape
+        } else if (k == Event.KEY_ESC) { // escape
           input.setValue(focusText);
           caret(input, 0, checkVal());
           Event.stop(e);
@@ -292,7 +303,7 @@
         if (e.ctrlKey || e.altKey || e.metaKey || e.charCode === 0 /*k < 32*/) { // ignore
         } else if (Prototype.Browser.Opera && vkKeyCode < 48 && vkKeyCode !== 32 /*k == 8*/) {
           // non-character keys in Opera
-          if (k == 8 || k == 46) { // backspace/delete was processed in keydownEvent
+          if (k == Event.KEY_BACKSPACE || k == 46) { // backspace/delete was processed in keydownEvent
             Event.stop(e);
           }
         } else if (k >= 32) {
@@ -304,7 +315,7 @@
             shiftL(begin, end - 1);
           }
 
-          var p = seekNext(begin - 1), c, next;
+          var p = seekNext(begin - 1), c, next, len = tests.length;
           if (p < len) {
             c = String.fromCharCode(k);
             if (tests[p].test(c)) {
@@ -340,7 +351,8 @@
         if (Prototype.Browser.IE) {
           moveCaret();
         } else {
-          setTimeout(moveCaret, 0);
+          clearTimeout(moveCaretTimer);
+          moveCaretTimer = setTimeout(moveCaret, 0);
         }
       }
 
