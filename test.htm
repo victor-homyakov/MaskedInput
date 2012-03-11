@@ -18,17 +18,22 @@
       label input {
         margin-right: 0.5em;
       }
+
+      .time {
+        font-family: "Courier New", Courier, monospace;
+      }
     </style>
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/prototype/1.6.1.0/prototype.js"></script>
-    <!-- <script type="text/javascript" src="event.simulate.js"></script> -->
-    <script type="text/javascript" src="prototype.maskedinput.js"></script>
+    <script type="text/javascript" src="../../lib/proto-scripty.js"></script>
+    <script type="text/javascript" src="../../js/ui/maskedinput.js"></script>
     <script type="text/javascript">
       Element.mask.definitions['H'] = '[012]';
       Element.mask.definitions['M'] = '[0-5]';
 
       Event.observe(document, 'dom:loaded', function() {
         //alert("dom:loaded");
-        $$(".time").invoke("mask", "H9:M9");
+        $$(".time").invoke("mask", "H9:M9", {
+          placeholder: "-"
+        });
         $("date1").mask("99.99.9999");
         $("phone").mask("(99) 999-99-99? ***");
         $("code").mask("********", {
@@ -49,11 +54,11 @@
         </label>
         <label>
           <span>start time</span>
-          <input type="text" name="startTime" class="time" /><span>H9:M9</span>
+          <input type="text" name="startTime" class="time" size="5" /><span>H9:M9</span>
         </label>
         <label>
           <span>end time</span>
-          <input type="text" name="endTime" class="time" /><span>H9:M9</span>
+          <input type="text" name="endTime" class="time" size="5" /><span>H9:M9</span>
         </label>
       </fieldset>
       <fieldset>
